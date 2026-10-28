@@ -17,8 +17,10 @@ export interface TaxCredit {
   room: number
 }
 
-export function paidInYear(entries: Entry[], year: string): number {
-  return entries.filter((e) => e.kind === 'deposit' && !e.opening && e.date.startsWith(year)).reduce((s, e) => s + (e.amount ?? 0), 0)
+/** 그해 이 계좌에 넣은 돈: 앱의 입금 기록 + 앱 시작 전에 넣었다고 적은 금액 */
+export function paidInYear(entries: Entry[], year: string, before?: { paidBeforeApp: number; paidBeforeAppYear: string }): number {
+  const earlier = before?.paidBeforeAppYear === year ? before.paidBeforeApp : 0
+  return earlier + entries.filter((e) => e.kind === 'deposit' && !e.opening && e.date.startsWith(year)).reduce((s, e) => s + (e.amount ?? 0), 0)
 }
 
 /** 이 계좌 납입액 + 다른 연금계좌(IRP로 봄) 납입액 → 공제 대상 금액 */

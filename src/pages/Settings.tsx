@@ -1,5 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useState } from 'react'
+import { localToday } from '../calc/schedule'
 import { Button, Card, NumberInput, Segmented } from '../components/ui'
 import { backupFileName, createBackup, lastBackupAt, markBackedUp, readBackup, restoreBackup, type Backup } from '../db/backup'
 import { clearAll, db, getSettings, setSettings } from '../db/db'
@@ -14,6 +15,7 @@ export function daysSince(iso: string | undefined, now = Date.now()) {
 export default function Settings() {
   const s = useLiveQuery(getSettings)
   if (!s) return null
+  const thisYear = localToday().slice(0, 4)
   return (
     <section className="space-y-4">
       <h1 className="text-2xl font-bold">설정</h1>
@@ -52,6 +54,15 @@ export default function Settings() {
               { id: '0.132', label: '초과 13.2%' },
             ]}
           />
+          <div>
+            앱으로 기록하기 전에 올해 이 계좌에 넣은 금액
+            <NumberInput
+              className="mt-1"
+              value={s.paidBeforeAppYear === thisYear ? s.paidBeforeApp : 0}
+              onChange={(n) => setSettings({ paidBeforeApp: n, paidBeforeAppYear: thisYear })}
+              suffix="원"
+            />
+          </div>
           <div>
             다른 연금계좌(IRP 등)에 올해 넣는 금액
             <NumberInput className="mt-1" value={s.otherAnnual} onChange={(n) => setSettings({ otherAnnual: n })} suffix="원" />

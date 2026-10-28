@@ -62,7 +62,7 @@ export default function Home({ go }: { go: (t: Tab) => void }) {
   const year = today.slice(0, 4)
   const tax = taxCredit({
     type: settings.accountType,
-    paid: paidInYear(entries, year),
+    paid: paidInYear(entries, year, settings),
     other: settings.otherAnnual,
     monthly: settings.monthlyAmount,
     depositsLeft: depositsLeftThisYear(today, settings.depositDay, deposited),

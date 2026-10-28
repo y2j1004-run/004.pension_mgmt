@@ -74,6 +74,10 @@ export interface Settings {
   otherAnnual: number
   /** 목표 비중에서 이만큼(%p) 벗어나면 알림 */
   driftBand: number
+  /** 앱으로 기록하기 전에 그해 이 계좌에 넣은 돈 (세액공제 계산용, 원금·예수금에는 안 들어감) */
+  paidBeforeApp: number
+  /** paidBeforeApp이 어느 해의 금액인지 (YYYY) */
+  paidBeforeAppYear: string
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -83,4 +87,6 @@ export const DEFAULT_SETTINGS: Settings = {
   taxRate: 0.165,
   otherAnnual: 0,
   driftBand: 5,
+  paidBeforeApp: 0,
+  paidBeforeAppYear: '',
 }

@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { eligibleAmount, taxCredit } from './tax'
+import { eligibleAmount, paidInYear, taxCredit } from './tax'
+
+describe('paidInYear', () => {
+  const entries = [
+    { date: '2026-11-21', kind: 'deposit' as const, amount: 716_320 },
+    { date: '2026-10-28', kind: 'deposit' as const, amount: 13_669, opening: true },
+  ]
+  it('adds what was paid before the app, for that year only', () => {
+    expect(paidInYear(entries, '2026', { paidBeforeApp: 7_163_200, paidBeforeAppYear: '2026' })).toBe(7_879_520)
+    expect(paidInYear(entries, '2027', { paidBeforeApp: 7_163_200, paidBeforeAppYear: '2026' })).toBe(0)
+  })
+})
 
 describe('tax credit', () => {
   it('caps a 연금저축 at 6M and the total at 9M', () => {
