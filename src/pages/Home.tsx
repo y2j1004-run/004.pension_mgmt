@@ -8,7 +8,7 @@ import type { Tab } from '../components/TabBar'
 import TrendChart from '../components/TrendChart'
 import { Button, Card, Stat, Tips, WeightBar } from '../components/ui'
 import { isSample, loadSample } from '../db/sample'
-import { dateLabel, gainColor, manwon, pct, signedWon, won } from '../format'
+import { dateLabel, gainColor, manwon, pct, signedWon, targetLabel, won } from '../format'
 import { ACCOUNT_LABEL } from '../model'
 import { usePortfolio } from '../usePortfolio'
 
@@ -142,7 +142,7 @@ export default function Home({ go }: { go: (t: Tab) => void }) {
               <div className="mb-1 flex justify-between gap-2 text-sm">
                 <span className="truncate">{h.name}</span>
                 <span className="shrink-0 tabular-nums text-slate-600">
-                  {h.weightPct.toFixed(1)}% / {targetSum ? ((h.targetPct / targetSum) * 100).toFixed(0) : 0}%
+                  {h.weightPct.toFixed(1)}% / {targetLabel(targetSum ? (h.targetPct / targetSum) * 100 : 0)}
                 </span>
               </div>
               <WeightBar pct={h.weightPct} target={targetSum ? (h.targetPct / targetSum) * 100 : undefined} />

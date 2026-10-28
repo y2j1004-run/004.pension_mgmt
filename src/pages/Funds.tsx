@@ -4,7 +4,7 @@ import { priceChange, type Holding } from '../calc/portfolio'
 import TrendChart from '../components/TrendChart'
 import { Button, Card, NumberInput, Tips, WeightBar } from '../components/ui'
 import { db, deleteEtf } from '../db/db'
-import { gainColor, pct, signedWon, won } from '../format'
+import { gainColor, pct, signedWon, targetLabel, won } from '../format'
 import { CATEGORIES, RISKY_BY_DEFAULT, type Category, type Etf } from '../model'
 import { usePortfolio, type Portfolio } from '../usePortfolio'
 
@@ -46,7 +46,7 @@ export default function Funds() {
               <div className="mt-3">
                 <WeightBar pct={h.weightPct} target={targetSum ? (h.targetPct / targetSum) * 100 : undefined} />
                 <div className="mt-1 text-xs text-slate-500 tabular-nums">
-                  지금 {h.weightPct.toFixed(1)}% · 목표 {targetSum ? ((h.targetPct / targetSum) * 100).toFixed(0) : 0}%
+                  지금 {h.weightPct.toFixed(1)}% · 목표 {targetLabel(targetSum ? (h.targetPct / targetSum) * 100 : 0)}
                 </div>
                 <Changes p={p} code={h.code} />
               </div>

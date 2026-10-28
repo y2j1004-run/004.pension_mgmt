@@ -6,7 +6,7 @@ import { depositedIn, nextDepositDate } from '../calc/schedule'
 import type { Tab } from '../components/TabBar'
 import { Button, Card, NumberInput, Segmented } from '../components/ui'
 import { savePrices, saveMonthly } from '../db/db'
-import { won } from '../format'
+import { targetLabel, won } from '../format'
 import { usePortfolio } from '../usePortfolio'
 
 type Mode = 'target' | 'keep' | 'one'
@@ -199,7 +199,7 @@ export default function Monthly({ go }: { go: (t: Tab) => void }) {
                       </td>
                       <td className="py-2 text-right text-xs whitespace-nowrap tabular-nums text-slate-600">
                         {l.beforePct.toFixed(1)} → <b className="text-slate-900">{l.afterPct.toFixed(1)}%</b>
-                        <div className="text-slate-400">목표 {targetSum ? ((etf.targetPct / targetSum) * 100).toFixed(0) : 0}%</div>
+                        <div className="text-slate-400">목표 {targetLabel(targetSum ? (etf.targetPct / targetSum) * 100 : 0)}</div>
                       </td>
                       <td className="py-2 pl-2">
                         <NumberInput value={l.buyQty} onChange={(n) => setEdits({ ...edits, [l.code]: Math.max(0, Math.floor(n)) })} suffix="주" />

@@ -24,3 +24,6 @@ export function parseNumber(s: string): number {
   const n = Number(s.replace(/[,\s원]/g, ''))
   return Number.isFinite(n) ? n : 0
 }
+
+/** 목표 비중 % — 1% 미만은 소수 한 자리까지 (0.1%가 0%로 보이지 않게) */
+export const targetLabel = (pctValue: number) => `${pctValue > 0 && pctValue < 1 ? pctValue.toFixed(1) : pctValue.toFixed(0)}%`
