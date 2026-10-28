@@ -1,3 +1,4 @@
+import type { Candidate } from '../calc/discover'
 import type { Category } from '../model'
 import { db } from './db'
 
@@ -8,7 +9,14 @@ const REFRESH_MS = 3 * 60 * 60 * 1000
 
 export interface MarketIndex {
   updatedAt: string
-  items: [code: string, name: string, tab: number][]
+  items: [code: string, name: string, tab: number, aum?: number][]
+}
+
+export interface MarketAll {
+  updatedAt: string
+  dates: string[]
+  /** closes는 dates와 같은 순서, 그날 가격이 없으면 null */
+  items: [code: string, name: string, tab: number, aum: number, amount: number, closes: (number | null)[]][]
 }
 
 /** 네이버 ETF 분류 → 앱 분류 */
@@ -73,4 +81,21 @@ export async function syncMarket(codes: string[], force = false): Promise<SyncRe
 
 export async function marketUpdatedAt(): Promise<string | undefined> {
   return (await db.meta.get('marketUpdatedAt'))?.value as string | undefined
+}
+
+/** 상장 ETF 전체의 6개월 종가 (새종목 추천용, 약 1MB라 필요할 때만 받음) */
+export async function loadAllEtfs(): Promise<{ updatedAt: string; candidates: Candidate[] }> {
+  const r = await fetch(`${BASE}all.json`, { cache: 'no-cache' })
+  if (!r.ok) throw new Error(`HTTP ${r.status}`)
+  const all = (await r.json()) as MarketAll
+  return {
+    updatedAt: all.updatedAt,
+    candidates: all.items.map(([code, name, tab, , amount, closes]) => ({
+      code,
+      name,
+      tab,
+      amount,
+      series: closes.flatMap((price, i) => (price ? [{ code, date: all.dates[i], price }] : [])),
+    })),
+  }
 }

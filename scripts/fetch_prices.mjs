@@ -3,7 +3,7 @@
 // Usage: node scripts/fetch_prices.mjs <outDir>   (LIVE_URL = the deployed prices/ folder, used when a fetch fails)
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { decode, parseDailyCloses, parseEtfList } from './naver.mjs'
+import { avgTradingValue, buildAll, decode, parseDailyBars, parseEtfList } from './naver.mjs'
 
 const OUT = process.argv[2] ?? 'dist/prices'
 const LIVE = process.env.LIVE_URL?.replace(/\/$/, '')
@@ -36,7 +36,7 @@ async function etfList() {
     return parseEtfList(JSON.parse(await get('https://finance.naver.com/api/sise/etfItemList.nhn')))
   } catch (e) {
     console.warn(`ETF list failed (${e.message}); using the published list`)
-    return (await live('index.json')).items.map(([code, name, tab]) => ({ code, name, tab }))
+    return (await live('index.json')).items.map(([code, name, tab, aum]) => ({ code, name, tab, aum }))
   }
 }
 
@@ -45,32 +45,41 @@ mkdirSync(OUT, { recursive: true })
 let fresh = 0
 let reused = 0
 const missing = []
+const all = []
 const queue = [...items]
 await Promise.all(
   Array.from({ length: CONCURRENCY }, async () => {
     for (let it; (it = queue.shift()); ) {
       let prices
+      let amount = 0
       try {
-        prices = parseDailyCloses(await get(`https://fchart.stock.naver.com/sise.nhn?symbol=${it.code}&timeframe=day&count=${COUNT}&requestType=0`))
-        if (!prices.length) throw new Error('no prices')
+        const bars = parseDailyBars(await get(`https://fchart.stock.naver.com/sise.nhn?symbol=${it.code}&timeframe=day&count=${COUNT}&requestType=0`))
+        if (!bars.length) throw new Error('no prices')
+        prices = bars.map(([date, close]) => [date, close])
+        amount = avgTradingValue(bars)
         fresh++
       } catch (e) {
         try {
-          prices = (await live(`${it.code}.json`)).prices
+          const old = await live(`${it.code}.json`)
+          prices = old.prices
+          amount = old.amount ?? 0
           reused++
         } catch {
           missing.push(`${it.code} ${it.name}: ${e.message}`)
           continue
         }
       }
-      writeFileSync(join(OUT, `${it.code}.json`), JSON.stringify({ code: it.code, prices }))
+      writeFileSync(join(OUT, `${it.code}.json`), JSON.stringify({ code: it.code, prices, amount }))
+      all.push({ ...it, amount, prices })
       await sleep(100)
     }
   }),
 )
 
 const updatedAt = new Date().toISOString()
-writeFileSync(join(OUT, 'index.json'), JSON.stringify({ updatedAt, count: items.length, items: items.map((it) => [it.code, it.name, it.tab]) }))
+writeFileSync(join(OUT, 'index.json'), JSON.stringify({ updatedAt, count: items.length, items: items.map((it) => [it.code, it.name, it.tab, it.aum ?? 0]) }))
+// every fund in one file, for screening new funds in the app
+writeFileSync(join(OUT, 'all.json'), JSON.stringify(buildAll(all, updatedAt)))
 console.log(`ETFs ${items.length}: fetched ${fresh}, reused published ${reused}, missing ${missing.length}`)
 for (const m of missing.slice(0, 20)) console.log(`  missing ${m}`)
 // a run that got almost nothing should show up red in Actions (the app is still deployed)

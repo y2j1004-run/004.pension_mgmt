@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { checkNewFund } from '../calc/advice'
 import { priceChange, type Holding } from '../calc/portfolio'
+import DiscoverCard from '../components/DiscoverCard'
 import TrendCard from '../components/TrendCard'
 import TrendChart from '../components/TrendChart'
 import { Button, Card, NumberInput, Tips, WeightBar } from '../components/ui'
@@ -14,6 +15,7 @@ export default function Funds() {
   const p = usePortfolio()
   const [open, setOpen] = useState<string>()
   const [adding, setAdding] = useState(false)
+  const [addCode, setAddCode] = useState<string>()
   if (!p) return null
   const { etfs, summary } = p
   const targetSum = etfs.reduce((s, e) => s + e.targetPct, 0)
@@ -61,13 +63,34 @@ export default function Funds() {
       })}
 
       {adding ? (
-        <Card title="종목 추가">
-          <EtfForm p={p} onDone={() => setAdding(false)} />
-        </Card>
+        <div id="add-fund">
+          <Card title="종목 추가">
+            <EtfForm
+              key={addCode}
+              p={p}
+              initialCode={addCode}
+              onDone={() => {
+                setAdding(false)
+                setAddCode(undefined)
+              }}
+            />
+          </Card>
+        </div>
       ) : (
         <Button className="w-full" onClick={() => setAdding(true)}>
           + 종목 추가
         </Button>
+      )}
+
+      {etfs.length > 0 && (
+        <DiscoverCard
+          p={p}
+          onAdd={(code) => {
+            setAddCode(code)
+            setAdding(true)
+            setTimeout(() => document.getElementById('add-fund')?.scrollIntoView({ behavior: 'smooth' }), 50)
+          }}
+        />
       )}
     </section>
   )
@@ -151,8 +174,8 @@ function Item({ label, value, sub }: { label: string; value: string; sub?: strin
   )
 }
 
-function EtfForm({ p, etf, onDone }: { p: Portfolio; etf?: Etf; onDone: () => void }) {
-  const [code, setCode] = useState(etf?.code ?? '')
+function EtfForm({ p, etf, initialCode, onDone }: { p: Portfolio; etf?: Etf; initialCode?: string; onDone: () => void }) {
+  const [code, setCode] = useState(etf?.code ?? initialCode ?? '')
   const [name, setName] = useState(etf?.name ?? '')
   const [category, setCategory] = useState<Category>(etf?.category ?? '해외주식')
   const [risky, setRisky] = useState(etf?.risky ?? RISKY_BY_DEFAULT['해외주식'])
@@ -180,6 +203,12 @@ function EtfForm({ p, etf, onDone }: { p: Portfolio; etf?: Etf; onDone: () => vo
       setFound('')
     }
   }
+
+  // a fund picked from the recommendations arrives with its code filled in
+  useEffect(() => {
+    if (initialCode) lookup(initialCode)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCode])
 
   const others = p.etfs.filter((e) => e.code !== etf?.code)
   const otherSum = others.reduce((s, e) => s + e.targetPct, 0)
