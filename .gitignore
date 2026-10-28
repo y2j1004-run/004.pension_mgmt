@@ -1,0 +1,9 @@
+# 개인 연금 데이터(백업 파일 등)는 저장소에 올리지 않음
+data/
+*-백업-*.json
+
+node_modules/
+dist/
+dev-dist/
+dist-preview/
+.env
