@@ -81,6 +81,8 @@ writeFileSync(join(OUT, 'index.json'), JSON.stringify({ updatedAt, count: items.
 // every fund in one file, for screening new funds in the app
 writeFileSync(join(OUT, 'all.json'), JSON.stringify(buildAll(all, updatedAt)))
 console.log(`ETFs ${items.length}: fetched ${fresh}, reused published ${reused}, missing ${missing.length}`)
+const liquid = all.filter((e) => e.amount >= 5).length
+console.log(`all.json: ${all.length} funds, ${liquid} trade 5억원+ a day; e.g. ${all.slice(0, 3).map((e) => `${e.name} ${e.amount}억`).join(', ')}`)
 for (const m of missing.slice(0, 20)) console.log(`  missing ${m}`)
 // a run that got almost nothing should show up red in Actions (the app is still deployed)
 if (fresh < items.length / 2) process.exit(1)
