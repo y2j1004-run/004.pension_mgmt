@@ -1,11 +1,12 @@
 import { useLiveQuery } from 'dexie-react-hooks'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { depositedIn, localToday, nextDepositDate } from './calc/schedule'
 import TabBar, { type Tab } from './components/TabBar'
 import UpdateBanner from './components/UpdateBanner'
 import { BACKUP_REMIND_DAYS, daysSince } from './pages/Settings'
 import { lastBackupAt } from './db/backup'
 import { db, getSettings } from './db/db'
+import { syncMarket } from './db/market'
 import Home from './pages/Home'
 import Monthly from './pages/Monthly'
 import Funds from './pages/Funds'
@@ -27,6 +28,17 @@ export default function App() {
     if (age == null || age >= BACKUP_REMIND_DAYS) out.push('settings')
     return out
   })
+
+  // 앱을 열거나 다시 볼 때, 받은 지 3시간이 지났으면 내 종목의 최신 종가를 받음
+  const codes = useLiveQuery(async () => (await db.etfs.toArray()).map((e) => e.code).sort().join(','))
+  useEffect(() => {
+    if (!codes) return
+    const sync = () => syncMarket(codes.split(',')).catch(() => {})
+    sync()
+    const onVisible = () => document.visibilityState === 'visible' && sync()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [codes])
 
   return (
     <div className="mx-auto flex h-full max-w-md flex-col">

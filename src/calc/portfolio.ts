@@ -70,8 +70,10 @@ export function accountOn(entries: Entry[], asOf = '9999-12-31'): Account {
   return { positions, cash, principal }
 }
 
-/** 종목별 가격 기록 (날짜순). 매수·매도 체결가도 그날의 가격으로 씁니다. */
-export function priceBook(prices: PricePoint[], entries: Entry[]): Map<string, PricePoint[]> {
+/**
+ * 종목별 가격 기록 (날짜순). 매일 받아온 종가 위에, 매수·매도 체결가와 직접 넣은 가격이 같은 날짜를 덮어씁니다.
+ */
+export function priceBook(prices: PricePoint[], entries: Entry[], market: PricePoint[] = []): Map<string, PricePoint[]> {
   const byCode = new Map<string, Map<string, number>>()
   const add = (code: string, date: string, price: number) => {
     if (!(price > 0)) return
@@ -79,6 +81,7 @@ export function priceBook(prices: PricePoint[], entries: Entry[]): Map<string, P
     if (!m) byCode.set(code, (m = new Map()))
     m.set(date, price)
   }
+  for (const p of market) add(p.code, p.date, p.price)
   for (const e of entries) if ((e.kind === 'buy' || e.kind === 'sell') && e.code && e.price) add(e.code, e.date, e.price)
   // an entered price wins over a trade price on the same day
   for (const p of prices) add(p.code, p.date, p.price)

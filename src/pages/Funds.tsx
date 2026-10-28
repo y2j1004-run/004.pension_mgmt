@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { checkNewFund } from '../calc/advice'
 import { priceChange, type Holding } from '../calc/portfolio'
+import TrendCard from '../components/TrendCard'
 import TrendChart from '../components/TrendChart'
 import { Button, Card, NumberInput, Tips, WeightBar } from '../components/ui'
 import { db, deleteEtf } from '../db/db'
+import { lookupEtf, syncMarket } from '../db/market'
 import { gainColor, pct, signedWon, targetLabel, won } from '../format'
 import { CATEGORIES, RISKY_BY_DEFAULT, type Category, type Etf } from '../model'
 import { usePortfolio, type Portfolio } from '../usePortfolio'
@@ -22,6 +24,8 @@ export default function Funds() {
         <h1 className="text-2xl font-bold">종목</h1>
         <span className={`text-sm tabular-nums ${Math.round(targetSum) === 100 ? 'text-slate-500' : 'font-semibold text-amber-700'}`}>목표 합 {targetSum}%</span>
       </div>
+
+      {etfs.length > 0 && <TrendCard p={p} />}
 
       {summary.holdings.map((h) => {
         const etf = etfs.find((e) => e.code === h.code)
@@ -160,6 +164,22 @@ function EtfForm({ p, etf, onDone }: { p: Portfolio; etf?: Etf; onDone: () => vo
   const [avg, setAvg] = useState<number>()
   const [heldSince, setHeldSince] = useState(p.today)
   const [err, setErr] = useState('')
+  const [found, setFound] = useState('')
+
+  // 6자리 코드를 넣으면 이름·분류를 채움 (받아 둔 전체 ETF 목록에서)
+  const lookup = async (c: string) => {
+    if (etf || c.trim().length !== 6) return
+    try {
+      const hit = await lookupEtf(c)
+      if (!hit) return setFound('목록에 없는 코드입니다. 이름을 직접 넣으세요.')
+      setName((n) => n || hit.name)
+      setCategory(hit.category)
+      setRisky(RISKY_BY_DEFAULT[hit.category])
+      setFound(`${hit.name} — 이름·분류를 채웠습니다. 혼합형이면 분류를 확인하세요.`)
+    } catch {
+      setFound('')
+    }
+  }
 
   const others = p.etfs.filter((e) => e.code !== etf?.code)
   const otherSum = others.reduce((s, e) => s + e.targetPct, 0)
@@ -184,6 +204,8 @@ function EtfForm({ p, etf, onDone }: { p: Portfolio; etf?: Etf; onDone: () => vo
         await db.entries.add({ date: heldSince, kind: 'buy', code: c, qty, price: avg, opening: true, memo: '앱 시작 전 보유' })
       }
     })
+    // get the new fund's price history right away
+    if (!etf) syncMarket([c], true).catch(() => {})
     onDone()
   }
 
@@ -193,13 +215,17 @@ function EtfForm({ p, etf, onDone }: { p: Portfolio; etf?: Etf; onDone: () => vo
       <div className="grid grid-cols-3 gap-2">
         <label>
           종목코드
-          <input className={input} value={code} disabled={!!etf} inputMode="numeric" placeholder="360750" onChange={(e) => setCode(e.target.value)} />
+          <input className={input} value={code} disabled={!!etf} inputMode="numeric" placeholder="360750" onChange={(e) => {
+              setCode(e.target.value)
+              lookup(e.target.value)
+            }} />
         </label>
         <label className="col-span-2">
           이름
           <input className={input} value={name} placeholder="예: TIGER 미국S&P500" onChange={(e) => setName(e.target.value)} />
         </label>
       </div>
+      {found && <p className="text-indigo-700">{found}</p>}
       <div className="grid grid-cols-2 gap-2">
         <label>
           분류

@@ -45,7 +45,7 @@ export function readBackup(json: unknown): Backup {
 /** 휴대폰의 내용을 지우고 백업으로 바꿉니다. */
 export async function restoreBackup(b: Backup) {
   await db.transaction('rw', db.etfs, db.entries, db.prices, db.meta, async () => {
-    await Promise.all([db.etfs.clear(), db.entries.clear(), db.prices.clear(), db.meta.delete('sample')])
+    await Promise.all([db.etfs.clear(), db.entries.clear(), db.prices.clear(), db.meta.delete('sample'), db.meta.delete('previousTargets')])
     await db.meta.put({ key: 'settings', value: b.settings })
     await db.etfs.bulkPut(b.etfs)
     await db.entries.bulkAdd(b.entries.map(({ id: _id, ...e }) => e))

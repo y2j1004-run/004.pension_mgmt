@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # weekdays after the Korean market closes (07:47 UTC = 16:47 KST): refresh ETF prices
+  schedule:
+    - cron: '47 7 * * 1-5'
 
 permissions:
   contents: read
@@ -28,6 +31,11 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
+      # daily closes of every listed ETF; if it fails the app is still deployed (with the prices it can recover)
+      - run: node scripts/fetch_prices.mjs dist/prices
+        continue-on-error: true
+        env:
+          LIVE_URL: https://y2j1004-run.github.io/004.pension_mgmt/prices
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

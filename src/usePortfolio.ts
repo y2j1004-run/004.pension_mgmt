@@ -10,6 +10,7 @@ export interface Portfolio {
   etfs: Etf[]
   entries: Entry[]
   prices: PricePoint[]
+  market: PricePoint[]
   settings: Settings
   book: Map<string, PricePoint[]>
   summary: Summary
@@ -23,11 +24,12 @@ export function usePortfolio(): Portfolio | undefined {
   const entries = useLiveQuery(() => db.entries.orderBy('date').toArray())
   const prices = useLiveQuery(() => db.prices.toArray())
   const settings = useLiveQuery(getSettings)
+  const market = useLiveQuery(() => db.market.toArray())
   return useMemo(() => {
-    if (!etfs || !entries || !prices || !settings) return undefined
-    const book = priceBook(prices, entries)
+    if (!etfs || !entries || !prices || !settings || !market) return undefined
+    const book = priceBook(prices, entries, market)
     const today = localToday()
-    const lastPriceDate = [...prices.map((p) => p.date), ...entries.filter((e) => e.price).map((e) => e.date)].sort().at(-1)
-    return { today, etfs, entries, prices, settings, book, summary: summarize(etfs, entries, book), lastPriceDate }
-  }, [etfs, entries, prices, settings])
+    const lastPriceDate = [...prices, ...market].map((p) => p.date).concat(entries.filter((e) => e.price).map((e) => e.date)).sort().at(-1)
+    return { today, etfs, entries, prices, market, settings, book, summary: summarize(etfs, entries, book), lastPriceDate }
+  }, [etfs, entries, prices, settings, market])
 }

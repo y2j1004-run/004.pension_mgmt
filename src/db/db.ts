@@ -11,6 +11,8 @@ export const db = new Dexie('pension-mgmt') as Dexie & {
   etfs: EntityTable<Etf, 'code'>
   entries: EntityTable<Entry, 'id'>
   prices: Dexie.Table<PricePoint, [string, string]>
+  /** 매일 받아오는 종가 (앱 주소의 prices/에서). 다시 받을 수 있어 백업에는 넣지 않음 */
+  market: Dexie.Table<PricePoint, [string, string]>
   meta: EntityTable<Meta, 'key'>
 }
 
@@ -18,6 +20,13 @@ db.version(1).stores({
   etfs: 'code',
   entries: '++id, date, kind, code',
   prices: '[code+date], code, date',
+  meta: 'key',
+})
+db.version(2).stores({
+  etfs: 'code',
+  entries: '++id, date, kind, code',
+  prices: '[code+date], code, date',
+  market: '[code+date], code, date',
   meta: 'key',
 })
 
@@ -52,7 +61,7 @@ export async function deleteEtf(code: string) {
 }
 
 export async function clearAll() {
-  await db.transaction('rw', db.etfs, db.entries, db.prices, db.meta, async () => {
-    await Promise.all([db.etfs.clear(), db.entries.clear(), db.prices.clear(), db.meta.delete('settings'), db.meta.delete('sample')])
+  await db.transaction('rw', [db.etfs, db.entries, db.prices, db.market, db.meta], async () => {
+    await Promise.all([db.etfs.clear(), db.entries.clear(), db.prices.clear(), db.market.clear(), db.meta.delete('settings'), db.meta.delete('sample'), db.meta.delete('previousTargets')])
   })
 }
