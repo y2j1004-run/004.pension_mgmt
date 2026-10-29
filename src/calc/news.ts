@@ -5,9 +5,18 @@ export interface Headline {
   date: string
 }
 
+export interface Video {
+  title: string
+  link: string
+  date: string
+  summary: string
+}
+
 export interface NewsFile {
   updatedAt: string
   themes: { id: string; label: string; items: Headline[] }[]
+  /** 참고하는 유튜브 채널의 최근 영상 (없던 때의 파일에는 없음) */
+  channels?: { id: string; label: string; items: Video[] }[]
 }
 
 /** 종목 이름 → 관련 뉴스 주제 (scripts/news.mjs의 THEMES id) */
@@ -39,4 +48,13 @@ export function relatedThemes(names: string[], news: NewsFile): { id: string; la
     .filter((t) => !MARKET_THEMES.includes(t.id) && t.items.length)
     .map((t) => ({ ...t, funds: names.filter((n) => themesOf(n).includes(t.id)) }))
     .filter((t) => t.funds.length)
+}
+
+/** 영상 제목이 내 종목의 주제를 다루면 그 주제 이름들 (예: 반도체, 금리·채권) */
+export function videoTopics(title: string, fundNames: string[], news: NewsFile): string[] {
+  const mine = new Set(fundNames.flatMap(themesOf))
+  const label = new Map(news.themes.map((t) => [t.id, t.label]))
+  return themesOf(title)
+    .filter((id) => mine.has(id))
+    .map((id) => label.get(id) ?? id)
 }

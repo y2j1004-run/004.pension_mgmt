@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { relatedThemes, themesOf, type NewsFile } from './news'
+import { relatedThemes, themesOf, videoTopics, type NewsFile } from './news'
 
 describe('news themes', () => {
   it('matches funds to themes by name', () => {
@@ -23,5 +23,11 @@ describe('news themes', () => {
       ],
     }
     expect(relatedThemes(['KODEX AI반도체TOP2플러스', 'KODEX 금액티브'], news)).toEqual([{ id: 'semi', label: '반도체', items: [h], funds: ['KODEX AI반도체TOP2플러스'] }])
+  })
+
+  it('tags a video with the themes of my funds it talks about', () => {
+    const news: NewsFile = { updatedAt: '', themes: [{ id: 'semi', label: '반도체', items: [] }, { id: 'rates', label: '금리·채권', items: [] }] }
+    expect(videoTopics('반도체 랠리와 국채 금리, 다음 주 전략', ['KODEX AI반도체TOP2플러스'], news)).toEqual(['반도체'])
+    expect(videoTopics('오늘의 시장', ['KODEX AI반도체TOP2플러스'], news)).toEqual([])
   })
 })

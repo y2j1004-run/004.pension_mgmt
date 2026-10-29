@@ -66,3 +66,31 @@ export function recent(items, now, n = 5, hours = 36) {
 }
 
 export const googleNewsUrl = (query) => `https://news.google.com/rss/search?q=${encodeURIComponent(`${query} when:2d`)}&hl=ko&gl=KR&ceid=KR:ko`
+
+/** 참고하는 유튜브 채널 (채널의 공개 새 영상 피드) */
+export const CHANNELS = [{ id: 'hs_academy', label: '이효석아카데미', channelId: 'UCxvdCnvGODDyuvnELnLkQWw' }]
+
+export const youtubeFeedUrl = (channelId) => `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`
+
+/** 설명 첫 줄을 짧게 (링크·해시태그 빼고) */
+function snippet(text, max = 120) {
+  const line =
+    text
+      .split('\n')
+      .map((l) => l.replace(/https?:\/\/\S+/g, '').replace(/#\S+/g, '').trim())
+      .find((l) => l.length >= 10) ?? ''
+  return line.length > max ? `${line.slice(0, max - 1)}…` : line
+}
+
+/** YouTube 채널 피드(Atom) → [{ title, link, date, summary }] newest first */
+export function parseYoutubeFeed(xml) {
+  const items = []
+  for (const m of xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
+    const body = m[1]
+    const title = tag(body, 'title')
+    const link = body.match(/<link[^>]*rel="alternate"[^>]*href="([^"]+)"/)?.[1] ?? ''
+    const time = Date.parse(tag(body, 'published'))
+    if (title && link && Number.isFinite(time)) items.push({ title, link: decodeEntities(link), date: new Date(time).toISOString(), summary: snippet(tag(body, 'media:description')) })
+  }
+  return items.sort((a, b) => b.date.localeCompare(a.date))
+}

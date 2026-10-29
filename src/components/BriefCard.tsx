@@ -1,7 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { briefing, type FundDay } from '../calc/brief'
-import { MARKET_THEMES, relatedThemes, type Headline } from '../calc/news'
+import { MARKET_THEMES, relatedThemes, videoTopics, type Headline } from '../calc/news'
 import { storedBrief, storedNews } from '../db/market'
 import { gainColor, pct, signedWon } from '../format'
 import type { PricePoint } from '../model'
@@ -117,6 +117,30 @@ export default function BriefCard({ p }: { p: Portfolio }) {
           </p>
         </>
       )}
+
+      {news?.channels
+        ?.filter((c) => c.items.length)
+        .map((c) => (
+          <div key={c.id}>
+            <h3 className="mt-4 mb-1 text-xs font-semibold text-slate-500">▶ 유튜브 · {c.label} 최근 영상</h3>
+            <ul className="space-y-2">
+              {c.items.slice(0, moreNews ? 6 : 3).map((v) => {
+                const topics = videoTopics(v.title, b.funds.map((f) => f.name), news)
+                return (
+                  <li key={v.link} className="text-sm leading-snug">
+                    <a href={v.link} target="_blank" rel="noopener noreferrer" className="text-slate-900 underline decoration-slate-300 underline-offset-2">
+                      {v.title}
+                    </a>
+                    <span className="ml-1 text-xs text-slate-400">{ago(v.date)}</span>
+                    {topics.length > 0 && <span className="ml-1 rounded bg-indigo-50 px-1 text-[11px] text-indigo-700">내 종목: {topics.join(', ')}</span>}
+                    {v.summary && <p className="mt-0.5 text-xs text-slate-500">{v.summary}</p>}
+                  </li>
+                )
+              })}
+            </ul>
+            <p className="mt-1 text-[11px] text-slate-400">채널의 공개 영상 목록에서 가져온 제목·소개 문구입니다. 영상 속 의견은 진행자의 견해이니 참고만 하세요.</p>
+          </div>
+        ))}
     </Card>
   )
 }
