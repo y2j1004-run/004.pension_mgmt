@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { googleNewsUrl, parseRss, parseYoutubeFeed, recent } from './news.mjs'
+import { extractChannelId, googleNewsUrl, parseRss, parseYoutubeFeed, recent, youtubeUploadsUrl } from './news.mjs'
 
 const rss = `<?xml version="1.0"?><rss><channel><title>x</title>
 <item><title>코스피, 외국인 매수에 2% 상승 마감 - 한국경제</title><link>https://news.google.com/a</link><pubDate>Wed, 28 Oct 2026 07:10:00 GMT</pubDate><source url="https://www.hankyung.com">한국경제</source></item>
@@ -41,5 +41,13 @@ describe('news', () => {
       summary: '오늘은 반도체와 금리 흐름을 같이 살펴봅니다. 외국인 수급이 어디로 가는지가 핵심입니다.',
     })
     expect(items[1].summary).toBe('')
+  })
+
+  it('finds the channel ID on a channel page and builds the uploads feed', () => {
+    const id = 'UCabcdefghijklmnopqrstuv'
+    expect(extractChannelId(`<html><link rel="canonical" href="https://www.youtube.com/channel/${id}"></html>`)).toBe(id)
+    expect(extractChannelId(`{"metadata":{"channelMetadataRenderer":{"externalId":"${id}"}}}`)).toBe(id)
+    expect(extractChannelId('<html>nothing</html>')).toBeUndefined()
+    expect(youtubeUploadsUrl(id)).toBe('https://www.youtube.com/feeds/videos.xml?playlist_id=UUabcdefghijklmnopqrstuv')
   })
 })

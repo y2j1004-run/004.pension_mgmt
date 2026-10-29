@@ -68,9 +68,21 @@ export function recent(items, now, n = 5, hours = 36) {
 export const googleNewsUrl = (query) => `https://news.google.com/rss/search?q=${encodeURIComponent(`${query} when:2d`)}&hl=ko&gl=KR&ceid=KR:ko`
 
 /** 참고하는 유튜브 채널 (채널의 공개 새 영상 피드) */
-export const CHANNELS = [{ id: 'hs_academy', label: '이효석아카데미', channelId: 'UCxvdCnvGODDyuvnELnLkQWw' }]
+export const CHANNELS = [{ id: 'hs_academy', label: '이효석아카데미', handle: 'hs_academy', channelId: 'UCxvdCnvGODDyuvnELnLkQWw' }]
 
 export const youtubeFeedUrl = (channelId) => `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`
+/** 채널의 '업로드' 재생목록 피드 (UC… → UU…) — 채널 피드가 안 될 때 */
+export const youtubeUploadsUrl = (channelId) => `https://www.youtube.com/feeds/videos.xml?playlist_id=UU${channelId.slice(2)}`
+export const youtubeHandleUrl = (handle) => `https://www.youtube.com/@${handle}`
+
+/** 채널 페이지 HTML에서 채널 ID (UC로 시작하는 24자) */
+export function extractChannelId(html) {
+  return (
+    html.match(/<link rel="canonical" href="https:\/\/www\.youtube\.com\/channel\/(UC[\w-]{22})"/)?.[1] ??
+    html.match(/"externalId":"(UC[\w-]{22})"/)?.[1] ??
+    html.match(/"channelId":"(UC[\w-]{22})"/)?.[1]
+  )
+}
 
 /** 설명 첫 줄을 짧게 (링크·해시태그 빼고) */
 function snippet(text, max = 120) {
