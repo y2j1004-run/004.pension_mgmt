@@ -68,7 +68,8 @@ export function recent(items, now, n = 5, hours = 36) {
 export const googleNewsUrl = (query) => `https://news.google.com/rss/search?q=${encodeURIComponent(`${query} when:2d`)}&hl=ko&gl=KR&ceid=KR:ko`
 
 /** 참고하는 유튜브 채널 (채널의 공개 새 영상 피드) */
-export const CHANNELS = [{ id: 'hs_academy', label: '이효석아카데미', handle: 'hs_academy', channelId: 'UCxvdCnvGODDyuvnELnLkQWw' }]
+// 예: { id: 'example', label: '채널 이름', handle: 'example', channelId: 'UC…' } — 지금은 참고하는 채널 없음
+export const CHANNELS = []
 
 export const youtubeFeedUrl = (channelId) => `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`
 /** 채널의 '업로드' 재생목록 피드 (UC… → UU…) — 채널 피드가 안 될 때 */
