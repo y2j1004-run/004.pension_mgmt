@@ -6,7 +6,7 @@ import UpdateBanner from './components/UpdateBanner'
 import { BACKUP_REMIND_DAYS, daysSince } from './pages/Settings'
 import { lastBackupAt } from './db/backup'
 import { db, getSettings } from './db/db'
-import { syncMarket } from './db/market'
+import { syncBriefing, syncMarket } from './db/market'
 import Home from './pages/Home'
 import Monthly from './pages/Monthly'
 import Funds from './pages/Funds'
@@ -33,7 +33,10 @@ export default function App() {
   const codes = useLiveQuery(async () => (await db.etfs.toArray()).map((e) => e.code).sort().join(','))
   useEffect(() => {
     if (!codes) return
-    const sync = () => syncMarket(codes.split(',')).catch(() => {})
+    const sync = () => {
+      syncMarket(codes.split(',')).catch(() => {})
+      syncBriefing().catch(() => {})
+    }
     sync()
     const onVisible = () => document.visibilityState === 'visible' && sync()
     document.addEventListener('visibilitychange', onVisible)

@@ -8,6 +8,8 @@ import { db } from './db'
 const BASE = `${import.meta.env.BASE_URL}prices/`
 /** 마지막으로 받은 지 이만큼 지나면 앱을 열 때 다시 받음 */
 const REFRESH_MS = 3 * 60 * 60 * 1000
+/** 시장 요약·뉴스는 작아서 더 자주 */
+const BRIEF_REFRESH_MS = 60 * 60 * 1000
 
 export interface MarketIndex {
   updatedAt: string
@@ -74,20 +76,11 @@ export async function syncMarket(codes: string[], force = false): Promise<SyncRe
       }
     }),
   )
-  // market summary and theme headlines for the closing briefing (kept for offline use)
-  const extra = await Promise.all(
-    ['brief', 'news'].map((name) =>
-      fetch(`${BASE}${name}.json`, { cache: 'no-cache' })
-        .then((r) => (r.ok ? r.json() : undefined))
-        .catch(() => undefined),
-    ),
-  )
   await db.meta.bulkPut([
     { key: 'marketFetchedAt', value: Date.now() },
     { key: 'marketUpdatedAt', value: index.updatedAt },
-    ...(extra[0] ? [{ key: 'marketBrief', value: extra[0] }] : []),
-    ...(extra[1] ? [{ key: 'news', value: extra[1] }] : []),
   ])
+  await syncBriefing(true)
   return { updatedAt: index.updatedAt, codes: codes.length - failed.length, points, failed }
 }
 
@@ -118,4 +111,27 @@ export async function storedBrief(): Promise<MarketBrief | undefined> {
 
 export async function storedNews(): Promise<NewsFile | undefined> {
   return (await db.meta.get('news'))?.value as NewsFile | undefined
+}
+
+/**
+ * 장 마감 브리핑의 시장 요약·뉴스를 받아 기기에 저장합니다. 가격 동기화와 따로 돌아,
+ * 기기에 아직 없으면 바로, 있으면 한 시간마다 새로 받습니다.
+ */
+export async function syncBriefing(force = false): Promise<void> {
+  const last = (await db.meta.get('briefFetchedAt'))?.value as number | undefined
+  const have = !!(await db.meta.get('marketBrief')) && !!(await db.meta.get('news'))
+  if (!force && have && last && Date.now() - last < BRIEF_REFRESH_MS) return
+  const [brief, news] = await Promise.all(
+    ['brief', 'news'].map((name) =>
+      fetch(`${BASE}${name}.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : undefined))
+        .catch(() => undefined),
+    ),
+  )
+  await db.meta.bulkPut([
+    ...(brief ? [{ key: 'marketBrief', value: brief }] : []),
+    ...(news ? [{ key: 'news', value: news }] : []),
+    // only count it as fetched when both came back, so a failed try is retried on the next open
+    ...(brief && news ? [{ key: 'briefFetchedAt', value: Date.now() }] : []),
+  ])
 }
