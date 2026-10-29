@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { avgTradingValue, buildAll, decode, parseDailyBars, parseDailyCloses, parseEtfList } from './naver.mjs'
+import { avgTradingValue, buildAll, buildBrief, decode, parseDailyBars, parseDailyCloses, parseEtfList } from './naver.mjs'
 
 describe('naver parsing', () => {
   it('reads the ETF list', () => {
@@ -38,6 +38,30 @@ describe('naver parsing', () => {
     )
     expect(all.dates).toEqual(['2026-10-27', '2026-10-28'])
     expect(all.items[1]).toEqual(['B', 'b', 4, 5, 2, [null, 3]])
+  })
+
+  it('summarizes the latest trading day', () => {
+    const e = (code, name, tab, amount, a, b, date = '2026-10-28') => ({ code, name, tab, amount, prices: [['2026-10-27', a], [date, b]] })
+    const brief = buildBrief(
+      [
+        e('A', 'KODEX 200', 1, 900, 100, 102),
+        e('B', 'KODEX 레버리지', 1, 900, 100, 104),
+        e('C', '반도체', 2, 50, 100, 97),
+        e('D', '거래 적은 테마', 2, 1, 100, 110),
+        e('E', '미국채', 6, 20, 100, 100),
+        e('F', '어제 거래 없음', 4, 20, 100, 90, '2026-10-27'),
+      ],
+      'now',
+      2,
+    )
+    expect(brief.date).toBe('2026-10-28')
+    expect([brief.up, brief.down, brief.flat]).toEqual([3, 1, 1])
+    expect(brief.gainers).toEqual([
+      ['A', 'KODEX 200', 0.02],
+      ['E', '미국채', 0],
+    ])
+    expect(brief.losers[0]).toEqual(['C', '반도체', -0.03])
+    expect(brief.groups.find((g) => g[0] === '국내 업종·테마')).toEqual(['국내 업종·테마', 0.035, 2])
   })
 
   it('decodes EUC-KR text', () => {

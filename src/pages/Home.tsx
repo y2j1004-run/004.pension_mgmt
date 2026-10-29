@@ -5,6 +5,7 @@ import { boughtIn, daysBetween, depositedIn, depositsLeftThisYear, nextDepositDa
 import { paidInYear, taxCredit } from '../calc/tax'
 import { xirr } from '../calc/xirr'
 import type { Tab } from '../components/TabBar'
+import BriefCard from '../components/BriefCard'
 import TrendChart from '../components/TrendChart'
 import { Button, Card, Stat, Tips, WeightBar } from '../components/ui'
 import { isSample, loadSample } from '../db/sample'
@@ -76,6 +77,8 @@ export default function Home({ go }: { go: (t: Tab) => void }) {
       {sample && (
         <div className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">예시 데이터입니다. ⚙️ 설정 → "모든 데이터 지우기" 후 내 종목을 넣으세요.</div>
       )}
+
+      <BriefCard p={p} />
 
       <Card>
         {today >= thisMonthDay && !deposited ? (

@@ -1,4 +1,6 @@
+import type { MarketBrief } from '../calc/brief'
 import type { Candidate } from '../calc/discover'
+import type { NewsFile } from '../calc/news'
 import type { Category } from '../model'
 import { db } from './db'
 
@@ -72,9 +74,19 @@ export async function syncMarket(codes: string[], force = false): Promise<SyncRe
       }
     }),
   )
+  // market summary and theme headlines for the closing briefing (kept for offline use)
+  const extra = await Promise.all(
+    ['brief', 'news'].map((name) =>
+      fetch(`${BASE}${name}.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : undefined))
+        .catch(() => undefined),
+    ),
+  )
   await db.meta.bulkPut([
     { key: 'marketFetchedAt', value: Date.now() },
     { key: 'marketUpdatedAt', value: index.updatedAt },
+    ...(extra[0] ? [{ key: 'marketBrief', value: extra[0] }] : []),
+    ...(extra[1] ? [{ key: 'news', value: extra[1] }] : []),
   ])
   return { updatedAt: index.updatedAt, codes: codes.length - failed.length, points, failed }
 }
@@ -98,4 +110,12 @@ export async function loadAllEtfs(): Promise<{ updatedAt: string; candidates: Ca
       series: closes.flatMap((price, i) => (price ? [{ code, date: all.dates[i], price }] : [])),
     })),
   }
+}
+
+export async function storedBrief(): Promise<MarketBrief | undefined> {
+  return (await db.meta.get('marketBrief'))?.value as MarketBrief | undefined
+}
+
+export async function storedNews(): Promise<NewsFile | undefined> {
+  return (await db.meta.get('news'))?.value as NewsFile | undefined
 }

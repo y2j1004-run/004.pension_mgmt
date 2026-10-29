@@ -36,6 +36,9 @@ jobs:
         continue-on-error: true
         env:
           LIVE_URL: https://y2j1004-run.github.io/004.pension_mgmt/prices
+      # headlines for a fixed list of market themes (not anyone's funds), for the closing briefing
+      - run: node scripts/fetch_news.mjs dist/prices
+        continue-on-error: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

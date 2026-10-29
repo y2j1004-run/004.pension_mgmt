@@ -51,3 +51,44 @@ export function decode(buf, contentType = '') {
   const utf8 = new TextDecoder('utf-8').decode(buf)
   return utf8.includes('�') ? new TextDecoder('euc-kr').decode(buf) : utf8
 }
+
+/** 레버리지·인버스는 시장 요약의 상승·하락 상위에서 뺌 (연금저축에서 살 수 없고, 움직임이 2배로 과장됨) */
+const GEARED = /레버리지|인버스|2X|곱버스/i
+const TAB_NAME = { 1: '국내 시장지수', 2: '국내 업종·테마', 4: '해외주식', 5: '원자재', 6: '채권' }
+
+const median = (xs) => {
+  const s = [...xs].sort((a, b) => a - b)
+  return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : 0
+}
+const round4 = (x) => Math.round(x * 10000) / 10000
+
+/**
+ * 가장 최근 거래일의 ETF 시장 요약 (앱의 장 마감 브리핑용).
+ * entries: [{ code, name, tab, amount, prices: [[date, close], ...] }]
+ */
+export function buildBrief(entries, updatedAt, top = 5, minAmount = 5) {
+  const date = entries.map((e) => e.prices.at(-1)?.[0]).filter(Boolean).sort().at(-1)
+  const moves = []
+  for (const e of entries) {
+    const n = e.prices.length
+    if (n < 2 || e.prices[n - 1][0] !== date) continue
+    moves.push({ code: e.code, name: e.name, tab: e.tab, amount: e.amount, change: e.prices[n - 1][1] / e.prices[n - 2][1] - 1 })
+  }
+  const plain = moves.filter((m) => !GEARED.test(m.name))
+  const liquid = plain.filter((m) => m.amount >= minAmount).sort((a, b) => b.change - a.change)
+  const pick = (m) => [m.code, m.name, round4(m.change)]
+  return {
+    updatedAt,
+    date,
+    up: moves.filter((m) => m.change > 0).length,
+    down: moves.filter((m) => m.change < 0).length,
+    flat: moves.filter((m) => m.change === 0).length,
+    // median of the plain (not geared) funds in each group, so one wild theme fund doesn't set the tone
+    groups: Object.entries(TAB_NAME).map(([tab, name]) => {
+      const xs = plain.filter((m) => m.tab === Number(tab)).map((m) => m.change)
+      return [name, round4(median(xs)), xs.length]
+    }),
+    gainers: liquid.slice(0, top).map(pick),
+    losers: liquid.slice(-top).reverse().map(pick),
+  }
+}

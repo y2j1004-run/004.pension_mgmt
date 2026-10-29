@@ -3,7 +3,7 @@
 // Usage: node scripts/fetch_prices.mjs <outDir>   (LIVE_URL = the deployed prices/ folder, used when a fetch fails)
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { avgTradingValue, buildAll, decode, parseDailyBars, parseEtfList } from './naver.mjs'
+import { avgTradingValue, buildAll, buildBrief, decode, parseDailyBars, parseEtfList } from './naver.mjs'
 
 const OUT = process.argv[2] ?? 'dist/prices'
 const LIVE = process.env.LIVE_URL?.replace(/\/$/, '')
@@ -80,8 +80,12 @@ const updatedAt = new Date().toISOString()
 writeFileSync(join(OUT, 'index.json'), JSON.stringify({ updatedAt, count: items.length, items: items.map((it) => [it.code, it.name, it.tab, it.aum ?? 0]) }))
 // every fund in one file, for screening new funds in the app
 writeFileSync(join(OUT, 'all.json'), JSON.stringify(buildAll(all, updatedAt)))
+// the latest trading day across the market, for the app's closing briefing
+const brief = buildBrief(all, updatedAt)
+writeFileSync(join(OUT, 'brief.json'), JSON.stringify(brief))
 console.log(`ETFs ${items.length}: fetched ${fresh}, reused published ${reused}, missing ${missing.length}`)
 const liquid = all.filter((e) => e.amount >= 5).length
+console.log(`brief.json: ${brief.date} up ${brief.up} down ${brief.down}; top ${brief.gainers[0]?.[1]} ${brief.gainers[0]?.[2]}`)
 console.log(`all.json: ${all.length} funds, ${liquid} trade 5억원+ a day; e.g. ${all.slice(0, 3).map((e) => `${e.name} ${e.amount}억`).join(', ')}`)
 for (const m of missing.slice(0, 20)) console.log(`  missing ${m}`)
 // a run that got almost nothing should show up red in Actions (the app is still deployed)
