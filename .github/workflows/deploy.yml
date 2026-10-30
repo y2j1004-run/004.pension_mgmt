@@ -4,9 +4,13 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  # weekdays after the Korean market closes (07:47 UTC = 16:47 KST): refresh ETF prices
+  # weekdays after the Korean market closes: refresh ETF prices, news and the briefing.
+  # GitHub runs schedules on a best-effort basis and sometimes skips one, so try three times
+  # (16:47, 18:17, 21:17 KST); a later run just refreshes the same day's data.
   schedule:
     - cron: '47 7 * * 1-5'
+    - cron: '17 9 * * 1-5'
+    - cron: '17 12 * * 1-5'
 
 permissions:
   contents: read

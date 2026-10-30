@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PricePoint } from '../model'
-import { briefing, signalsOf } from './brief'
+import { briefing, expectedTradingDay, signalsOf } from './brief'
 import { addDays } from './portfolio'
 
 const END = '2026-10-28'
@@ -73,5 +73,12 @@ describe('briefing', () => {
 
   it('has nothing to say without prices', () => {
     expect(briefing([{ code: 'X', name: 'x', qty: 1 }], new Map())).toBeUndefined()
+  })
+
+  it('knows which close should be in by now', () => {
+    expect(expectedTradingDay(new Date(2026, 9, 30, 20, 10))).toBe('2026-10-30') // Fri evening
+    expect(expectedTradingDay(new Date(2026, 9, 30, 9, 0))).toBe('2026-10-29') // Fri morning
+    expect(expectedTradingDay(new Date(2026, 10, 2, 8, 0))).toBe('2026-10-30') // Mon morning
+    expect(expectedTradingDay(new Date(2026, 9, 31, 12, 0))).toBe('2026-10-30') // Saturday
   })
 })

@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
-import { briefing, type FundDay } from '../calc/brief'
+import { briefing, expectedTradingDay, type FundDay } from '../calc/brief'
 import { MARKET_THEMES, relatedThemes, videoTopics, type Headline } from '../calc/news'
 import { storedBrief, storedNews } from '../db/market'
 import { gainColor, pct, signedWon } from '../format'
@@ -34,6 +34,7 @@ export default function BriefCard({ p }: { p: Portfolio }) {
 
   if (!b) return null
   const funds = all ? b.funds : b.funds.slice(0, 5)
+  const expected = expectedTradingDay(new Date())
   const related = news ? relatedThemes(b.funds.map((f) => f.name), news) : []
   const marketNews = news?.themes.filter((t) => MARKET_THEMES.includes(t.id) && t.items.length) ?? []
 
@@ -48,6 +49,11 @@ export default function BriefCard({ p }: { p: Portfolio }) {
         )
       }
     >
+      {b.date < expected && (
+        <p className="mb-2 rounded-lg bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
+          {dayLabel(expected)} 장 마감 데이터가 아직 올라오지 않아 {dayLabel(b.date)} 결과를 보여 드립니다. 보통 오후 5시 전후, 늦으면 밤 9시대에 갱신됩니다(휴장일이면 정상).
+        </p>
+      )}
       <p className={`text-lg font-semibold tabular-nums ${gainColor(b.pnl)}`}>
         {signedWon(b.pnl)} ({pct(b.change, 2)})
       </p>

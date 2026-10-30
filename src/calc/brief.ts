@@ -169,3 +169,17 @@ export function briefing(holdings: { code: string; name: string; qty: number }[]
     against,
   }
 }
+
+/**
+ * 지금(휴대폰 시각) 기준으로 장 마감 데이터가 있어야 할 가장 최근 평일.
+ * 평일 readyHour시 이후면 오늘, 아니면 그 전 평일. 공휴일은 모르므로 휴장일에는 하루 앞서 나옵니다.
+ */
+export function expectedTradingDay(now: Date, readyHour = 17): string {
+  const d = new Date(now)
+  const weekday = (x: Date) => x.getDay() >= 1 && x.getDay() <= 5
+  if (!(weekday(d) && d.getHours() >= readyHour)) {
+    do d.setDate(d.getDate() - 1)
+    while (!weekday(d))
+  }
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
